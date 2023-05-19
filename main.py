@@ -478,7 +478,7 @@ def send_email_route():
 # Configuration for Backblaze B2
 REPO_OWNER = 'renedias15'
 REPO_NAME = 'college_management'
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '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'
 
 @app.route('/enteranceForm', methods=['POST'])
 def entrance_form():
