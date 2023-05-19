@@ -329,57 +329,70 @@ def EntranceForm_courses():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@app.route('/enteranceForm', methods=['POST'])
-def enterance_form():
-    try:
-        email = request.form.get('email')
-        fullname = request.form.get('fullName')
-        course = request.form.get('selectedCourse')
-        photo = request.files.get('photo')
-        marksheet = request.files.get('marksheet')
+# @app.route('/enteranceForm', methods=['POST'])
+# def enterance_form():
+#     try:
+#         email = request.form.get('email')
+#         fullname = request.form.get('fullName')
+#         course = request.form.get('selectedCourse')
+#         photo = request.files.get('photo')
+#         marksheet = request.files.get('marksheet')
 
-        # Check if the required fields are present
-        if not fullname or not course or not photo or not marksheet:
-            return jsonify({'error': 'Incomplete form data'}), 400
+#         # Check if the required fields are present
+#         if not fullname or not course or not photo or not marksheet:
+#             return jsonify({'error': 'Incomplete form data'}), 400
 
-        # Check if the files have allowed extensions
-        allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf'}
-        if not (photo.filename.endswith(tuple(allowed_extensions)) and
-                marksheet.filename.endswith(tuple(allowed_extensions))):
-            return jsonify({'error': 'Invalid file extensions'}), 400
+#         # Check if the files have allowed extensions
+#         allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf'}
+#         if not (photo.filename.endswith(tuple(allowed_extensions)) and
+#                 marksheet.filename.endswith(tuple(allowed_extensions))):
+#             return jsonify({'error': 'Invalid file extensions'}), 400
 
-        # Save the files to the server
-        # photo.filename =  eamil+'_'+photo.filename 
-        photo_filename = secure_filename(photo.filename)
-        marksheet_filename = secure_filename(marksheet.filename)
-        photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_filename)
-        marksheet_path = os.path.join(app.config['UPLOAD_FOLDER'], marksheet_filename)
-        photo.save(photo_path)
-        marksheet.save(marksheet_path)
+#         # Save the files to the server
+#         # photo.filename =  eamil+'_'+photo.filename 
+#         photo_filename = secure_filename(photo.filename)
+#         marksheet_filename = secure_filename(marksheet.filename)
+#         photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_filename)
+#         marksheet_path = os.path.join(app.config['UPLOAD_FOLDER'], marksheet_filename)
+#         photo.save(photo_path)
+#         marksheet.save(marksheet_path)
 
-        # Save the form data to the MySQL database
-        cursor = mysql.connection.cursor()
-        query = "INSERT INTO enterance_forms (email,fullname, course, photo, marksheet) VALUES (%s,%s, %s, %s, %s)"
-        cursor.execute(query, (email,fullname, course, photo_path, marksheet_path))
-        mysql.connection.commit()
-        cursor.close()
+#         # Save the form data to the MySQL database
+#         cursor = mysql.connection.cursor()
+#         query = "INSERT INTO enterance_forms (email,fullname, course, photo, marksheet) VALUES (%s,%s, %s, %s, %s)"
+#         cursor.execute(query, (email,fullname, course, photo_path, marksheet_path))
+#         mysql.connection.commit()
+#         cursor.close()
 
-        return 'Form submitted successfully!'
+#         return 'Form submitted successfully!'
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/getEnteranceForms', methods=['GET'])
-def getEnteranceForms():
-    try:
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT * from enterance_forms where elligible not in (1,2)")
-        forms = cur.fetchall()
-        cur.close()
-        return jsonify(forms)
-    except Exception as e:
-        print('Error fetching leave requests:', e)
-        return jsonify([])
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+# def get_b2_file_url(bucket_name, file_name):
+#     b2_api = authenticate_b2()
+#     file_info = b2_api.get_file_info_by_name(bucket_name, file_name)
+#     download_url = b2_api.get_download_url_by_id(file_info.file_id)
+#     return download_url
+# @app.route('/getEnteranceForms', methods=['GET'])
+# def getEnteranceForms():
+#     try:
+#         cur = mysql.connection.cursor()
+#         cur.execute("SELECT * from enterance_forms where elligible not in (1,2)")
+#         forms = cur.fetchall()
+#         cur.close()
+        
+#         for form in forms:
+#             print(form)
+#             photo_url = get_b2_file_url('vue-uploads', form[4])
+#             marksheet_url = get_b2_file_url('vue-uploads', form[5])
+#             print(photo_url)
+#             form[4] = photo_url
+#             form[5] = marksheet_url
+            
+#         return jsonify(forms)
+#     except Exception as e:
+#         print('Error fetching leave requests:', e)
+#         return jsonify([])
 
 @app.route('/getElligibleApplicants', methods=['GET'])
 def getElligibleApplicants():
@@ -461,5 +474,88 @@ def send_email_route():
     result = send_email(recipient, subject, body)
     return result
 ###########################
+# Configuration for Backblaze B2
+REPO_OWNER = 'renedias15'
+REPO_NAME = 'college_management'
+GITHUB_TOKEN = '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'
+
+@app.route('/enteranceForm', methods=['POST'])
+def entrance_form():
+    try:
+        email = request.form.get('email')
+        fullname = request.form.get('fullName')
+        course = request.form.get('selectedCourse')
+        photo = request.files.get('photo')
+        marksheet = request.files.get('marksheet')
+
+        # Check if the required fields are present
+        if not fullname or not course or not photo or not marksheet:
+            return jsonify({'error': 'Incomplete form data'}), 400
+
+        # Check if the files have allowed extensions
+        allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf'}
+        if not (photo.filename.endswith(tuple(allowed_extensions)) and
+                marksheet.filename.endswith(tuple(allowed_extensions))):
+            return jsonify({'error': 'Invalid file extensions'}), 400
+        
+        def upload_file_to_github(file, file_name):
+            g = Github(GITHUB_TOKEN)
+            repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
+            contents = file.read()
+            path = f"{folder_name}/{file_name}"
+            repo.create_file(path, f"Upload {file_name}", contents, branch='main')
+
+        # Save the files to Backblaze B2
+        folder_name = "uploads"
+        photo_filename = secure_filename(photo.filename)
+        marksheet_filename = secure_filename(marksheet.filename)
+        upload_file_to_github(photo, photo_filename)
+        upload_file_to_github(marksheet, marksheet_filename)
+
+        # Save the form data to the MySQL database
+        cursor = mysql.connection.cursor()
+        query = "INSERT INTO enterance_forms (email, fullname, course, photo, marksheet) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query, (email, fullname, course, photo_filename, marksheet_filename))
+        mysql.connection.commit()
+        cursor.close()
+
+        return 'Form submitted successfully!'
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def get_github_file_link(file_path):
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
+    file_contents = repo.get_contents(file_path)
+    return file_contents.download_url
+    
+@app.route('/getEnteranceForms', methods=['GET'])
+def getEnteranceForms():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * from enterance_forms where elligible not in (1,2)")
+        forms = cur.fetchall()
+        cur.close()
+
+        updated_forms = []
+        for form in forms:
+            form_list = list(form)  # Convert tuple to list
+            print(form_list)
+            photo_file_path = f"uploads/{form[4]}"  # Assuming form[4] contains the photo file name
+            marksheet_file_path = f"uploads/{form[5]}"  # Assuming form[5] contains the marksheet file name
+            photo_url = get_github_file_link(photo_file_path)
+            marksheet_url = get_github_file_link(marksheet_file_path)
+            print(photo_url)
+            form_list[4] = photo_url
+            form_list[5] = marksheet_url
+            updated_forms.append(tuple(form_list))  # Convert list back to tuple and add to updated forms list
+
+        return jsonify(updated_forms)
+    except Exception as e:
+        print('Error fetching leave requests:', e)
+        return jsonify([])
+    
+#################
 if __name__ == '__main__':
     app.run(debug=True)
