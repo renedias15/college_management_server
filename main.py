@@ -478,7 +478,7 @@ def send_email_route():
 # Configuration for Backblaze B2
 REPO_OWNER = 'renedias15'
 REPO_NAME = 'college_management'
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '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'
 
 @app.route('/enteranceForm', methods=['POST'])
 def entrance_form():
@@ -498,9 +498,7 @@ def entrance_form():
         if not (photo.filename.endswith(tuple(allowed_extensions)) and
                 marksheet.filename.endswith(tuple(allowed_extensions))):
             return jsonify({'error': 'Invalid file extensions'}), 400
-        REPO_OWNER = 'renedias15'
-        REPO_NAME = 'college_management'
-        GITHUB_TOKEN = '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' 
+        
         def upload_file_to_github(file, file_name):
             g = Github(GITHUB_TOKEN)
             repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
