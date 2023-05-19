@@ -498,7 +498,9 @@ def entrance_form():
         if not (photo.filename.endswith(tuple(allowed_extensions)) and
                 marksheet.filename.endswith(tuple(allowed_extensions))):
             return jsonify({'error': 'Invalid file extensions'}), 400
-        
+        REPO_OWNER = 'renedias15'
+        REPO_NAME = 'college_management'
+        GITHUB_TOKEN = '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' 
         def upload_file_to_github(file, file_name):
             g = Github(GITHUB_TOKEN)
             repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
@@ -512,7 +514,7 @@ def entrance_form():
         marksheet_filename = secure_filename(marksheet.filename)
         upload_file_to_github(photo, photo_filename)
         upload_file_to_github(marksheet, marksheet_filename)
-
+        
         # Save the form data to the MySQL database
         cursor = mysql.connection.cursor()
         query = "INSERT INTO enterance_forms (email, fullname, course, photo, marksheet) VALUES (%s, %s, %s, %s, %s)"
