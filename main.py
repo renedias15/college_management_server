@@ -507,7 +507,14 @@ def entrance_form():
             repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
             contents = file.read()
             path = f"{folder_name}/{file_name}"
-            repo.create_file(path, f"Upload {file_name}", contents, branch='main')
+            try:
+                repo.create_file(path, f"Upload {file_name}", contents, branch='main')
+                return 'File uploaded successfully!'
+            except Exception as e:
+                if 'sha' in str(e):
+                    return 'File already exists.'
+                else:
+                    return f'Error uploading file: {str(e)}'
 
         # Save the files to Backblaze B2
         folder_name = "uploads"
@@ -529,6 +536,10 @@ def entrance_form():
         return jsonify({'error': str(e)}), 500
 
 def get_github_file_link(file_path):
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT name from token")
+    result = cursor.fetchone()
+    GITHUB_TOKEN=result[0]
     g = Github(GITHUB_TOKEN)
     repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
     file_contents = repo.get_contents(file_path)
