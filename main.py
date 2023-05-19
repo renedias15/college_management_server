@@ -479,6 +479,10 @@ def send_email_route():
 REPO_OWNER = 'renedias15'
 REPO_NAME = 'college_management'
 #GITHUB_TOKEN = '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'
+cursor = mysql.connection.cursor()
+cursor.execute("SELECT name from token")
+result = cursor.fetchone()
+GITHUB_TOKEN=result[0]
 
 @app.route('/enteranceForm', methods=['POST'])
 def entrance_form():
@@ -498,12 +502,7 @@ def entrance_form():
         if not (photo.filename.endswith(tuple(allowed_extensions)) and
                 marksheet.filename.endswith(tuple(allowed_extensions))):
             return jsonify({'error': 'Invalid file extensions'}), 400
-        
-        cursor = mysql.connection.cursor()
-        cursor.execute("SELECT name from token")
-        result = cursor.fetchone()
-        GITHUB_TOKEN=result[0]
-        
+       
         def upload_file_to_github(file, file_name):
             g = Github(GITHUB_TOKEN)
             repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
