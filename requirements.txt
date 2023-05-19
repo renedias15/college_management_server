@@ -4,5 +4,4 @@ flask_mysqldb==1.0.1
 datetime==4.3
 werkzeug==2.2.2
 pygithub
-github
 gunicorn
