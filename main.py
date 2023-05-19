@@ -478,7 +478,7 @@ def send_email_route():
 # Configuration for Backblaze B2
 REPO_OWNER = 'renedias15'
 REPO_NAME = 'college_management'
-GITHUB_TOKEN = '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'
+#GITHUB_TOKEN = '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'
 
 @app.route('/enteranceForm', methods=['POST'])
 def entrance_form():
@@ -488,7 +488,7 @@ def entrance_form():
         course = request.form.get('selectedCourse')
         photo = request.files.get('photo')
         marksheet = request.files.get('marksheet')
-
+        
         # Check if the required fields are present
         if not fullname or not course or not photo or not marksheet:
             return jsonify({'error': 'Incomplete form data'}), 400
@@ -498,6 +498,11 @@ def entrance_form():
         if not (photo.filename.endswith(tuple(allowed_extensions)) and
                 marksheet.filename.endswith(tuple(allowed_extensions))):
             return jsonify({'error': 'Invalid file extensions'}), 400
+        
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT name from token")
+        result = cursor.fetchone()
+        GITHUB_TOKEN=result[0]
         
         def upload_file_to_github(file, file_name):
             g = Github(GITHUB_TOKEN)
