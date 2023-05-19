@@ -4,6 +4,7 @@ from flask_mysqldb import MySQL
 from datetime import date
 from werkzeug.utils import secure_filename
 import os 
+from github import Github
 
 import smtplib
 from email.mime.text import MIMEText
