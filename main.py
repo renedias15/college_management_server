@@ -105,35 +105,40 @@ def create_announcement():
 ######################## student ######################################################
 @app.route('/addStudent', methods=['POST'])
 def create_student():
-    data = request.get_json()
-    fname= data['firstName']
-    sname= data['surname']
-    age=data['age']
-    address=data['address']
-    phone=data['phone']
-    cur = mysql.connection.cursor()
+    try:
+        data = request.get_json()
+        fname= data['firstName']
+        sname= data['surname']
+        age=data['age']
+        address=data['address']
+        phone=data['phone']
+        course=data['selectedCourse']
+        cur = mysql.connection.cursor()
+        
+        sql="SELECT MAX(id) + 1 AS next_id FROM student"
+        cur.execute(sql)
+        result = cur.fetchone()
+        next_id = result[0]
+        
+        if next_id is None:
+            next_id=1  
     
-    sql="SELECT MAX(id) + 1 AS next_id FROM student"
-    cur.execute(sql)
-    result = cur.fetchone()
-    next_id = result[0]
-    
-    if next_id is None:
-        next_id=1  
- 
-    query = "INSERT INTO student (id,first_name,surname,age,address,phone) VALUES (%s,%s,%s,%s,%s,%s)"
-    cur.execute(query, (next_id,fname,sname,age,address,phone))
-    
-    mysql.connection.commit()
-    cur.close()
-    
-    return jsonify({'message': 'Student created successfully'})
+        query = "INSERT INTO student (id,first_name,surname,dob,address,phone,created_date,course) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
+        cur.execute(query, (next_id,fname,sname,age,address,phone,today,course))
+        
+        mysql.connection.commit()
+        cur.close()
+        
+        return jsonify({'message': 'Student created successfully'})
+    except Exception as e:
+            print('Error fetching student requests:', e)
+            return jsonify([])
 
 @app.route('/getStudents', methods=['GET'])
 def get_students():
     try:
         cur = mysql.connection.cursor()
-        cur.execute("SELECT id, first_name,surname,age,address,phone FROM student where deleted=0")
+        cur.execute("SELECT id, first_name,surname,dob,address,phone FROM student where deleted=0")
         students = cur.fetchall()
         cur.close()
         return jsonify(students)
@@ -146,7 +151,7 @@ def get_students():
 def get_student(student_id):
     try:
         cur = mysql.connection.cursor()
-        cur.execute("SELECT id, first_name, surname, age, address, phone FROM student WHERE id = %s", (student_id,))
+        cur.execute("SELECT id, first_name, surname, dob, address, phone,course FROM student WHERE id = %s", (student_id,))
         student = cur.fetchone()
         cur.close()
         if student:
@@ -168,7 +173,7 @@ def update_student(student_id):
     phone = data['phone']
     cur = mysql.connection.cursor()
 
-    query = "UPDATE student SET first_name=%s, surname=%s, age=%s, address=%s, phone=%s WHERE id=%s"
+    query = "UPDATE student SET first_name=%s, surname=%s, dob=%s, address=%s, phone=%s WHERE id=%s"
     cur.execute(query, (fname, sname, age, address, phone, student_id))
 
     mysql.connection.commit()
@@ -571,6 +576,81 @@ def getEnteranceForms():
         print('Error fetching leave requests:', e)
         return jsonify([])
     
+#################
+@app.route('/uploadMeritList', methods=['POST'])
+def create_meritList():
+    try:
+        course = request.form.get('course')
+        file_attached = request.files.get('file')
+        print(course)
+        # Check if the required fields are present
+        if not file_attached or not course:
+            return jsonify({'error': 'Incomplete form data'}), 400
+
+        # Check if the files have allowed extensions
+        allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf'}
+        if not (file_attached.filename.endswith(tuple(allowed_extensions))):
+            return jsonify({'error': 'Invalid file extensions'}), 400
+
+        
+        def upload_file_to_github(file, file_name):
+            cursor = mysql.connection.cursor()
+            cursor.execute("SELECT name from token")
+            result = cursor.fetchone()
+            GITHUB_TOKEN=result[0]
+            g = Github(GITHUB_TOKEN)
+            repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
+            contents = file.read()
+            path = f"{folder_name}/{file_name}"
+            try:
+                repo.create_file(path, f"Upload {file_name}", contents, branch='main')
+                return 'File uploaded successfully!'
+            except Exception as e:
+                if 'sha' in str(e):
+                    return 'File already exists.'
+                else:
+                    return f'Error uploading file: {str(e)}'
+
+        # Save the files to Backblaze B2
+        folder_name = "uploads"
+        filename = secure_filename(file_attached.filename)
+        upload_file_to_github(file_attached,filename)
+        
+
+        # Save the form data to the MySQL database
+        cursor = mysql.connection.cursor()
+        query = "INSERT INTO merit_list (course,file) VALUES (%s, %s)"
+        cursor.execute(query, (course, filename))
+        mysql.connection.commit()
+        cursor.close()
+
+        return 'Form submitted successfully!'
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/merit-lists', methods=['GET'])
+def get_merit_lists():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * from merit_list ")
+        forms = cur.fetchall()
+        cur.close()
+
+        updated_forms = []
+        for form in forms:
+            form_list = list(form)  # Convert tuple to list
+            print(form_list)
+            photo_file_path = f"uploads/{form[2]}"  # Assuming form[4] contains the photo file name
+            photo_url = get_github_file_link(photo_file_path)
+            print(photo_url)
+            form_list[2] = photo_url
+            updated_forms.append(tuple(form_list))  # Convert list back to tuple and add to updated forms list
+
+        return jsonify(updated_forms)
+    except Exception as e:
+        print('Error fetching leave requests:', e)
+        return jsonify([])
 #################
 if __name__ == '__main__':
     app.run(debug=True)
