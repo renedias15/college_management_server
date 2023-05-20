@@ -617,12 +617,14 @@ def create_meritList():
         upload_file_to_github(file_attached,filename)
         
 
-        # Save the form data to the MySQL database
-        cursor = mysql.connection.cursor()
-        query = "INSERT INTO merit_list (course,file) VALUES (%s, %s)"
-        cursor.execute(query, (course, filename))
-        mysql.connection.commit()
-        cursor.close()
+        try:
+            cursor = mysql.connection.cursor()
+            query = "INSERT INTO merit_list (course,file) VALUES (%s, %s)"
+            cursor.execute(query, (course, filename))
+            mysql.connection.commit()
+            cursor.close()
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
         return 'Form submitted successfully!'
 
