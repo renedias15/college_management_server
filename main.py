@@ -272,13 +272,13 @@ def get_teachers():
         cur.execute("SELECT id, first_name,surname,course,address,phone FROM teacher where deleted=0")
         teachers= cur.fetchall()
         cur.close()
-        return jsonify(teaachers)
+        return jsonify(teachers)
     except Exception as e:
         print('Error fetching teachers:', e)
         return jsonify([])
 
 @app.route('/deleteTeacher/<int:teacher_id>', methods=['DELETE'])
-def delete_teaacher(teacher_id):
+def delete_teacher(teacher_id):
     try:
         cur = mysql.connection.cursor()
         cur.execute("UPDATE teacher SET deleted=1 WHERE id = %s", (teacher_id,))
