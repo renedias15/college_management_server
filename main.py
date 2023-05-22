@@ -223,6 +223,17 @@ def create_course():
     
     return jsonify({'message': 'Course created successfully'})
 
+@app.route('/getCourses', methods=['GET'])
+def get_courses():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id, name,code,description,credits,prerequistite,fee FROM course where deleted=0")
+        course = cur.fetchall()
+        cur.close()
+        return jsonify(course)
+    except Exception as e:
+        print('Error fetching course:', e)
+        return jsonify([])
 ########################################################################################################################
 
 #############################################TEACHERS#################################################################
@@ -253,6 +264,63 @@ def create_teacher():
     cur.close()
     
     return jsonify({'message': 'Teacher created successfully'})
+
+@app.route('/getTeachers', methods=['GET'])
+def get_teachers():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id, first_name,surname,course,address,phone FROM teacher where deleted=0")
+        teachers= cur.fetchall()
+        cur.close()
+        return jsonify(teaachers)
+    except Exception as e:
+        print('Error fetching teachers:', e)
+        return jsonify([])
+
+@app.route('/deleteTeacher/<int:teacher_id>', methods=['DELETE'])
+def delete_teaacher(teacher_id):
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("UPDATE teacher SET deleted=1 WHERE id = %s", (teacher_id,))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'message': 'teacher deleted successfully'})
+    except Exception as e:
+        print('Error deleting teacher:', e)
+        return jsonify({'message': 'Error deleting student'})
+
+@app.route('/getTeacher/<int:teacher_id>', methods=['GET'])
+def get_teacher(teacher_id):
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id, first_name, surname, course, address, phone,course FROM teacher WHERE id = %s", (teacher_id,))
+        teacher = cur.fetchone()
+        cur.close()
+        if teacher:
+            return jsonify(teacher)
+        else:
+            return jsonify({'message': 'teacher not found'})
+    except Exception as e:
+        print('Error fetching student:', e)
+        return jsonify({'message': 'Error fetching teacher'})
+
+@app.route('/updateTeacher/<int:teacher_id>', methods=['PUT'])
+def update_teacher(teacher_id):
+    data = request.get_json()
+    fname = data['firstName']
+    sname = data['lastName']
+    age = data['age']
+    address = data['address']
+    phone = data['phone']
+    cur = mysql.connection.cursor()
+
+    query = "UPDATE teacher SET first_name=%s, surname=%s, course=%s, address=%s, phone=%s WHERE id=%s"
+    cur.execute(query, (fname, sname, age, address, phone, student_id))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({'message': 'teacher updated successfully'})
 ########################################################################################################################
 
 ############################LEAVES####################################################################
