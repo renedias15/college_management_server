@@ -227,7 +227,7 @@ def create_course():
 def get_courses():
     try:
         cur = mysql.connection.cursor()
-        cur.execute("SELECT id, name,code,description,credits,prerequistite,fee FROM course where deleted=0")
+        cur.execute("SELECT id, name,code,description,credits,prerequisite,fee FROM course where deleted=0")
         course = cur.fetchall()
         cur.close()
         return jsonify(course)
