@@ -722,5 +722,71 @@ def get_merit_lists():
         print('Error fetching leave requests:', e)
         return jsonify([])
 #################
+@app.route('/getSubjects/<string:course>', methods=['GET'])    ## this is to fetch subjects for particular course
+def getSubjects(course):
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute('SELECT name FROM subject where course=%s',(course,))
+        Subjects = [course[0] for course in cursor.fetchall()]
+        cursor.close()
+        return jsonify(Subjects)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/getTeacher-name', methods=['GET'])     ## fetches names and courses associated to teacher
+def getTeacher_name():
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute('SELECT concat(first_name," ",surname),course,teacher.id,GROUP_CONCAT(subject) from teacher left JOIN teachersubjects on teacher.id=teachersubjects.teacher_id and teachersubjects.deleted=0 group by course')
+        res= cursor.fetchall()
+        cursor.close()
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/saveSubject', methods=['POST'])
+def save_subject():
+    try:
+        data = request.get_json()
+        teacher_id= data['id']
+        subject= data['subject']
+        cur = mysql.connection.cursor()
+        
+        sql="SELECT MAX(id) + 1 AS next_id FROM teachersubjects"
+        cur.execute(sql)
+        result = cur.fetchone()
+        next_id = result[0]
+        
+        if next_id is None:
+            next_id=1  
+
+        sql="SELECT teacher_id,subject FROM teachersubjects where teacher_id=%s and subject=%s"
+        cur.execute(sql,(teacher_id,subject))
+        res = cur.fetchone()
+        
+        if res is None:
+        
+            query = "INSERT INTO teachersubjects (id,teacher_id,subject) VALUES (%s,%s,%s)"
+            cur.execute(query, (next_id,teacher_id,subject))
+            
+            mysql.connection.commit()
+            cur.close()
+            
+            return jsonify({'message': 'added successfully'})
+        return jsonify({'message':'already present'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+      
+# @app.route('/getSubject/<int:id>', methods=['GET'])
+# def get_subject(id):
+#     try:
+#         cursor = mysql.connection.cursor()
+#         cursor.execute('SELECT subject from teachersubjects INNER JOIN teacher on teacher.id=teachersubjects.teacher_id where teacher_id=%s',(id,))
+#         res= cursor.fetchall()
+#         cursor.close()
+#         return jsonify(res)
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+##################
 if __name__ == '__main__':
     app.run(debug=True)
