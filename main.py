@@ -15,10 +15,10 @@ today = date.today()
 app = Flask(__name__)
 CORS(app,origins='http://localhost:8080')
 
-app.config['MYSQL_HOST']= 'sql12.freemysqlhosting.net'
-app.config['MYSQL_USER']= 'sql12619279'
-app.config['MYSQL_PASSWORD']= '6lKSP28lpd'
-app.config['MYSQL_DB']= 'sql12619279'
+app.config['MYSQL_HOST']= 'db4free.net'
+app.config['MYSQL_USER']= 'rooter001'
+app.config['MYSQL_PASSWORD']= '71dfd607'
+app.config['MYSQL_DB']= 'college_app_db'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 mysql= MySQL(app)
 
